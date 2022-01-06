@@ -1,3 +1,7 @@
+// noinspection JSUnresolvedVariable,JSUnresolvedFunction
+
+import log from "tailwindcss/lib/util/log";
+
 window._ = require('lodash')
 
 /**
@@ -17,6 +21,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
  */
 
 import Echo from 'laravel-echo'
+import Alpine from 'alpinejs'
 // import Peer from 'peerjs';
 
 window.Pusher = require('pusher-js')
@@ -25,7 +30,7 @@ window.Swal = require('sweetalert2')
 
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: 'wbc_key',
+    key: process.env.MIX_PUSHER_APP_KEY,
     wsHost: window.location.hostname,
     wsPort: 6001,
     forceTLS: false,
@@ -33,16 +38,70 @@ window.Echo = new Echo({
 })
 
 /*
-*  listen to chat channel and log every event on that channel
+*  listen to chat room channel
 * */
-window.Echo.channel('chat')
-    .listen("MessageEvent", function (e) {
-        console.log(window.Echo.socketId())
-        console.log(e.message.id + " received")
-    }).listen("MessageDeleteEvent", function (e) {
-    console.log(e.id + " deleted")
+
+function joinToChannel(roomId) {
+    window.Echo.join(`chat.${roomId}`)
+        .subscribed(()=>{
+            window.livewire.emit('subscribed')
+        })
+        .here(users => {
+            window.livewire.emit('here', users)
+        })
+        .joining(user => {
+            window.livewire.emit('joining', user)
+            // console.log("joining" + JSON.stringify(user))
+        })
+        .leaving(user => {
+            window.livewire.emit('leaving', user)
+            // console.log("joining" + JSON.stringify(user))
+        })
+        .listen('NewMessage', message => {
+            window.livewire.emit('newMessage', message)
+            // console.log("newMessage" + JSON.stringify(message))
+        })
+        .listen('MessageDelete', data => {
+            window.livewire.emit('removeMessage', data)
+            // console.log("deleteMessage" + JSON.stringify(data))
+        })
+        .error(error => {
+            sweetAlert(error)
+        })
+}
+
+joinToChannel(window.roomId)
+
+
+function sweetAlert(title){
+    window.Swal.fire({
+        title: title,
+        target: '#error-target',
+        customClass: {
+            container: '!absolute'
+        },
+        icon: 'error',
+        timer: 2000,
+        timerProgressBar: true,
+        toast: true,
+        position: 'top',
+        showConfirmButton: false,
+    })
+}
+
+/*
+   * change the room when user click to change room
+   * */
+$(window).on('roomChanged', e => {
+    window.Echo.leave(`chat.${window.roomId}`)
+    window.roomId = e.detail.roomId
+    joinToChannel(window.roomId)
+    window.livewire.emit('roomChanged', window.roomId)
 })
 
+$(window).on('listeners', e=>{
+    console.log(e.detail);
+})
 
 /*
 * peerjs client connection
@@ -61,12 +120,6 @@ window.Echo.channel('chat')
 //     console.log(id)
 // })
 
-/**
- *
- * Alpine Js
- */
-import Alpine from 'alpinejs'
-
 window.Alpine = Alpine
 Alpine.start()
 
@@ -75,29 +128,18 @@ Alpine.start()
 * custom functions
 *
 */
+const chatMessages = $('#chat-messages')
+const mobile = window.matchMedia('(max-width: 768px)')
+const desktop = window.matchMedia('(min-width: 1024px)')
+const leftMenu = $("#left-menu")
+const userList = $("#user-list")
+const headerLeft = $('#header-left')
 
 $(document).ready(function () {
-    const mobile = window.matchMedia('(max-width: 768px)')
-    const desktop = window.matchMedia('(min-width: 1024px)')
-    const leftMenu = $("#left-menu")
-    const userList = $("#user-list")
-    const chatMessages = $('#chat-messages')
-    const headerLeft = $('#header-left')
-    const loader = $('#loader')
-
-    /*
-    * show or hide loader
-    * */
-    loader.removeClass('hidden')
-    chatMessages.addClass('hidden')
-    setTimeout(() => {
-        loader.addClass('hidden')
-        chatMessages.removeClass('hidden')
-    }, 1500);
 
     /*
     * toggle right and left menu
-    * */
+    */
     window.toggleMenu = () => {
         if (mobile.matches) userList.hide()
         leftMenu.toggle()
@@ -133,15 +175,12 @@ $(document).ready(function () {
                 window.livewire.emit('load-more-messages', page++)
             }
         }
-        if (Math.abs($(this).scrollTop()) === 1) {
+        if (Math.abs($(this).scrollTop()) === 20) {
             page = 1
             isAvailable = true
-            window.livewire.emit('scrolled-bottom')
+            isScrolling = false
+            window.livewire.emit('scrolledBottom')
         }
-    })
-
-    $(window).on('scrolled-bottom', e => {
-        isScrolling = false
     })
 
     $(window).on('on-load-more-messages', e => {
@@ -159,31 +198,50 @@ $(document).ready(function () {
     * scroll to bottom when new message arrives
     * */
 
-    $(window).on('message-sent', function (e) {
+    $(window).on('message-received', e => {
         if (!isScrolling) chatMessages.scrollTop($(chatMessages)[0].scrollHeight)
         $('#message-sound')[0].play();
     })
 
-    /*
+    $(window).on('message-sent', e => {
+        if (!isScrolling) chatMessages.scrollTop($(chatMessages)[0].scrollHeight)
+    })
+
+   /*
     *  show toast when sending empty message
     * */
 
-    $(window).on('empty-input', function (event) {
-        $('#error-target').show()
-        window.Swal.fire({
-            title: event.detail.title,
-            target: '#error-target',
-            customClass: {
-                container: '!absolute'
-            },
-            icon: 'error',
-            timer: 1500,
-            timerProgressBar: true,
-            toast: true,
-            position: 'top',
-            showConfirmButton: false,
-        })
+    $(window).on('chatError', e => {
+       sweetAlert(e.detail.title)
     })
+
+    /*
+    * Record audio and send
+    * */
+    const MicRecorder = require('mic-recorder-to-mp3');
+    const recorder = new MicRecorder({bitRate: 128});
+
+    function startRecording(){
+        recorder.start().then(() => {
+
+        }).catch((e) => {
+            console.error(e);
+        });
+    }
+
+    recorder
+        .stop()
+        .getMp3().then(([buffer, blob]) => {
+        const file = new File(buffer, 'music.mp3', {
+            type: blob.type,
+            lastModified: Date.now()
+        });
+    }).catch((e) => {
+        console.log(e);
+    });
+
 })
+
+
 
 

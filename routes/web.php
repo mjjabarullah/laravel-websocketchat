@@ -1,6 +1,8 @@
 <?php
 
-use App\Events\MessageEvent;
+use App\Models\Room;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,10 +17,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('chat');
-});
+    $user = User::with('room')->find(Auth::id());
+    $room = Room::find($user->room_id);
+    return view('chat', ['user'=>$user, "room"=>$room]);
+})->middleware(['auth'])->name('chat');
 
-Route::get('/messages', function () {
-    return \App\Models\Message::all();
-});
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
+require __DIR__.'/auth.php';

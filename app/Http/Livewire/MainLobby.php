@@ -2,54 +2,241 @@
 
 namespace App\Http\Livewire;
 
-use App\Events\MessageEvent;
+use App\Events\MessageDelete;
+use App\Events\NewMessage;
 use App\Models\Message;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use App\Models\Room;
+use App\Models\User;
+use Exception;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Ramsey\Uuid\Uuid;
 
 class MainLobby extends Component
 {
-
     use WithFileUploads;
 
     public string $input = "";
     public $image;
+    public $audio;
+    public array $chatMessages = [];
+    public User $user;
+    public bool $showLoader = true;
+    private int $limit = 15;
+    public Room $room;
+
+    protected $listeners = [
+        'here',
+        'subscribed',
+        'newMessage',
+        'removeMessage',
+        'hideLoader',
+        'load-more-messages' => 'loadMore',
+        'scrolledBottom'
+    ];
+
+    public function mount(User $user, Room $room)
+    {
+        $this->user = $user;
+        $this->room = $room;
+    }
 
     public function render()
     {
-        return view('livewire.main-lobby', [
-            'messages' => Message::orderBy('id', 'desc')->take(15)->get()
+        return view('livewire.main-lobby');
+    }
+
+    public function subscribed()
+    {
+        $this->chatMessages = $this->getMessages();
+        $this->showLoader = false;
+        $this->emit('hideLoader');
+    }
+
+    public function here()
+    {
+        $bot = User::where('is_bot', true)->first();
+        $name = $this->user->name;
+        $msg =
+            "<span wire:click.prevent=\"onClickUserName('$name')\" @click='\$refs.input.focus()' class='bg-yellow-500 rounded-md text-white px-2 cursor-pointer'>$name</span> has joined {$this->user->room->name}. <span wire:click.prevent=\"welcomeUser('$name')\" class='cursor-pointer text-yellow-500'>Click here</span> to welcome .";
+        $message = $bot->messages()->create([
+            'room_id' => $this->room->id,
+            'message' => $msg,
+            'type' => 'system',
         ]);
+        $topic = [
+            'id' => -1,
+            'message' => "$name, Welcome to {$this->user->room->name}. Click on the user's name, tag and continue your chat. ",
+            'type' => 'topic',
+        ];
+        $this->broadcastToOthers($message);
+        array_unshift($this->chatMessages, $topic);
     }
 
     public function sendMessage()
     {
-        if (trim($this->input) == "") {
-            $this->dispatchBrowserEvent('empty-input', [
+        $input = strip_tags(htmlspecialchars_decode($this->input));
+        if (trim($input) == "") {
+            $this->dispatchBrowserEvent('chatError', [
                 'title' => 'Message text cannot be empty'
             ]);
             return;
         }
-//        if (!Auth::check()) {
-//            $this->dispatchBrowserEvent('empty-input', [
-//                'title' => 'you are not a logged in user'
-//            ]);
-//            return;
-//        }
-        $message = Message::create([
-            'message' => $this->input
+        $message = $this->user->messages()->create([
+            'room_id' => $this->room->id,
+            'message' => $input,
+            'type' => 'public',
         ]);
-        broadcast(new MessageEvent($message));
-        $this->input = "";
-
+        $this->reset('input');
+        $this->broadcastToOthers($message);
     }
 
-    public function uploadImage()
+    public function updatedImage()
     {
-        $this->image->store('images', 'public');
+        try {
+            $this->validate([
+                'image' => 'image|max:1024'
+            ]);
+        } catch (Exception $e) {
+            $this->dispatchBrowserEvent('chatError', [
+                'title' => 'Image should be less than 1 MB'
+            ]);
+            return;
+        }
+        $message = $this->user->messages()->create([
+            'room_id' => $this->room->id,
+            'message' => $this->input,
+            'image' => $this->image->store('images', 'public'),
+            'type' => 'public',
+        ]);
+        $this->reset('input');
+        $this->reset('image');
+        $this->broadcastToOthers($message);
     }
 
+    public function newMessage(Message $message)
+    {
+        if (count($this->chatMessages) >= $this->limit) {
+            array_pop($this->chatMessages);
+        }
+        array_unshift($this->chatMessages, $message);
+        $this->dispatchBrowserEvent('message-received');
+    }
+
+    public function loadMore(int $page)
+    {
+        $this->dispatchBrowserEvent('on-load-more-messages', ['loading' => true]);
+        $moreMessages = $this->getMessages($page);
+        if (count($moreMessages) == 0) {
+            $this->dispatchBrowserEvent('no-more-messages', [
+                'loading' => false,
+                'available' => false,
+                'message' => 'No more messages available.'
+            ]);
+            return;
+        }
+        foreach ($moreMessages as $message) {
+            array_push($this->chatMessages, $message);
+        }
+        $this->dispatchBrowserEvent('on-load-more-messages', ['loading' => false, 'available' => true]);
+    }
+
+    public function scrolledBottom()
+    {
+        if (count($this->chatMessages) > $this->limit) {
+            $this->chatMessages = array_slice($this->chatMessages, 0, $this->limit);
+        }
+    }
+
+    public function deleteMessage($id)
+    {
+        $message = Message::find($id);
+        if ($message == null) {
+            $this->dispatchBrowserEvent('chatError', [
+                'title' => 'Message already deleted'
+            ]);
+            return;
+        }
+        $this->chatMessages = array_filter($this->chatMessages, function ($value) use ($id) {
+            return $value['id'] != $id;
+        });
+        broadcast(new MessageDelete($message->id, $message->room_id))->toOthers();
+        $message->delete();
+    }
+
+    public function removeMessage($data)
+    {
+        $this->chatMessages = array_filter($this->chatMessages, function ($value) use ($data) {
+            return $value['id'] != $data['id'];
+        });
+    }
+
+    public function reportMessage(Message $message)
+    {
+//        $dm = 'reported ' . $message->id;
+        dd($message);
+    }
+
+    public function welcomeUser($name)
+    {
+        $appName = env("APP_NAME");
+        $randomMessage = [
+            "Welcome to $appName $name",
+            "$name welcome to $appName",
+            "Welcome to $appName family $name"
+        ];
+        $message = $this->user->messages()->create([
+            'room_id' => $this->room->id,
+            'message' => $randomMessage[rand(0, count($randomMessage) - 1)],
+            'type' => 'public',
+        ]);
+        $this->broadcastToOthers($message);
+    }
+
+    public function onClickUserName($name)
+    {
+        $this->input .= " $name ";
+    }
+
+    public function deleteTopic($id)
+    {
+        $this->chatMessages = array_filter($this->chatMessages, function ($value) use ($id) {
+            return $value['id'] != $id;
+        });
+    }
+
+    public function onChangeRoom(Room $room)
+    {
+        $this->room = $room;
+        $this->showLoader = true;
+        $this->emit('show-loader');
+        $this->user->room_id = $this->room->id;
+        $this->user->save();
+        $this->dispatchBrowserEvent('roomChanged', ['roomId' => $this->room->id]);
+    }
+
+    public function hideLoader()
+    {
+        $this->showLoader = false;
+    }
+
+    private function broadcastToOthers($message)
+    {
+        if (count($this->chatMessages) >= $this->limit) {
+            array_pop($this->chatMessages);
+        }
+        array_unshift($this->chatMessages, $message);
+        $this->dispatchBrowserEvent('message-sent');
+        broadcast(new NewMessage($message))->toOthers();
+    }
+
+    protected function getMessages($page = 0): array
+    {
+        return $this->room->messages()
+            ->with('user')
+            ->orderBy('id', 'desc')
+            ->offset($page * $this->limit)
+            ->take($this->limit)
+            ->get()
+            ->toArray();
+    }
 }

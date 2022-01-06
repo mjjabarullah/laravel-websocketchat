@@ -1,10 +1,10 @@
-<div @click.away="showMenu= false" class="z-50 h-12 flex w-screen items-center justify-between shadow-md shadow-primary/30 ">
+<div x-data="{ showMenu: @entangle('showMenu') }" @click.away="showMenu= false" class="z-50 h-12 flex w-screen items-center justify-between shadow-md shadow-primary/30 ">
     <div class="flex w-full items-center flex-1 h-full">
        <div id="header-left" class="h-full hidden lg:flex w-56 lg:w-72 bg-primary-800 gap-2 px-2 items-center justify-between ">
            <div class="text-white text-[22px] px-2 tracking-wide">
                <a class="font-bold">Chat<span class="font-light">Net</span></a>
            </div>
-           <p class="px-4 py-1 bg-black/30 rounded-lg text-white text-[14px]">Tamil Chat</p>
+           <p class="px-4 py-1 bg-yellow-500 rounded-lg text-white text-[14px]">{{$room->name}}</p>
        </div>
         <div class="h-full flex grow justify-between bg-primary-800 lg:bg-primary-900">
             <div class="h-full flex pl-2 gap-4 items-center">
@@ -14,8 +14,8 @@
                     </svg>
                 </button>
                 <div class="flex flex-col text-white">
-                    <p class="font-medium text-[12px] lg:text-[14px]">Tamil Chat</p>
-                    <p class="font-light  text-[10px] lg:text-[12px]">#tamil-chat</p>
+                    <p class="font-medium text-[12px] lg:text-[14px]">{{$room->name}}</p>
+                    <p class="font-light  text-[10px] lg:text-[12px]">#{{\Illuminate\Support\Str::slug($room->name)}}</p>
                 </div>
             </div>
             <div class="h-full flex lg:w-80 bg-primary-800 justify-end items-center gap-2 pr-1">
@@ -31,7 +31,7 @@
                 <svg class="w-6 h-6 text-white " fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd"></path>
                 </svg>
-                <button @click="showMenu= !showMenu">
+                <button wire:click.prevent="showMenu">
                     <svg class="w-12 h-12 text-white " fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
                     </svg>

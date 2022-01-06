@@ -1,8 +1,8 @@
 <div id="left-menu" class="hidden z-[60] lg:z-0 bg-white lg:block bg-white h-screen absolute top-0 inset-y-0 lg:relative w-56 lg:w-72 lg:h-full rounded-tr-xl rounded-br-xl lg:rounded-none drop-shadow-lg lg:drop-shadow-none">
     <div class="h-full w-full flex flex-col rounded-tr-xl lg:rounded-none absolute">
         <div class=" w-full lg:hidden sticky top-0 z-10 h-12 flex justify-between items-center bg-primary-900 lg:bg-primary-800 flex-none w-full rounded-tr-xl lg:rounded-none">
-            <div class="text-white text-[18px] px-2 tracking-wide">
-                <a class="font-bold">Chat<span class="font-medium italic">Net</span></a>
+            <div class="text-white text-[22px] px-2 tracking-wide">
+                <a class="font-bold">Chat<span class="font-light">Net</span></a>
             </div>
             <div class="flex items-center justify-end p-2 w-full">
                 <button class="mr-1 rounded-full" @click="toggleMenu">
@@ -14,9 +14,9 @@
         </div>
         <div class="left top-0 flex flex-col overflow-y-auto overflow-x-hidden h-full w-full">
             <div class=" flex-none w-full items-center justify-center h-56 flex flex-col text-white bg-[url('/storage/assets/img/bg-user-greetings.jpg')]">
-                <img class="rounded-full w-20 h-20 shadow-md border-[3px] border-white" src="{{asset('storage/assets/img/sample.jpg')}}" alt="avatar">
+                <img class="rounded-full w-20 h-20 shadow-md border-[3px] border-white" src="{{asset('storage/images/'. auth()->user()->avatar)}}"  alt="{{auth()->user()->name}}">
                 <span class="pt-1 text-[13px] font-light">Good Afternooon,</span>
-                <div class="text-[18px]">Jarvis</div>
+                <div class="text-[18px]">{{auth()->user()->name}}</div>
                 <p class="text-center py-2 mx-auto text-[11px] lg:text-[12px] font-light">" Start your day off with a smile and positive thought with this morning. "</p>
             </div>
             {{--                        menulist--}}

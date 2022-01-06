@@ -2,7 +2,7 @@
     {{--                menus--}}
     <livewire:chat-left />
     {{--                messages--}}
-    <livewire:main-lobby />
+    <livewire:main-lobby :user="$user" :room="$room"/>
     {{--                users--}}
-    <livewire:chat-right />
+    <livewire:chat-right  />
 </div>

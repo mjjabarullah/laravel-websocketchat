@@ -4,6 +4,7 @@ module.exports = {
     content: [
         "./resources/**/*.blade.php",
         "./resources/**/*.js",
+        "./app/Http/Livewire/MainLobby.php",
     ],
   theme: {
         colors: {
@@ -18,6 +19,7 @@ module.exports = {
             yellow: colors.yellow,
             sky: colors.sky,
             'primary': {
+                200: '#cbdef8',
                 800: '#062249',
                 900: '#041b3b'
             },
