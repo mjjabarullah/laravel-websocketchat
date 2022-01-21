@@ -16,6 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property mixed name
  * @property mixed room_id
  * @property Room room
+ * @property mixed socket_id
  */
 class User extends Authenticatable
 {
@@ -51,6 +52,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'date_of_birth' => 'datetime',
     ];
+
+    public function connections(): HasMany
+    {
+        return $this->hasMany(connection::class);
+    }
 
     public function messages(): HasMany
     {

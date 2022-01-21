@@ -1,11 +1,12 @@
-<div id="left-menu" class="hidden z-[60] lg:z-0 bg-white lg:block bg-white h-screen absolute top-0 inset-y-0 lg:relative w-56 lg:w-72 lg:h-full rounded-tr-xl rounded-br-xl lg:rounded-none drop-shadow-lg lg:drop-shadow-none">
+<div id="left-menu" class="hidden z-[60] lg:z-0 bg-white lg:block bg-white h-screen absolute top-0 inset-y-0 lg:relative w-56 lg:w-80 lg:h-full rounded-tr-xl rounded-br-xl lg:rounded-none drop-shadow-lg lg:drop-shadow-none">
     <div class="h-full w-full flex flex-col rounded-tr-xl lg:rounded-none absolute">
-        <div class=" w-full lg:hidden sticky top-0 z-10 h-12 flex justify-between items-center bg-primary-900 lg:bg-primary-800 flex-none w-full rounded-tr-xl lg:rounded-none">
-            <div class="text-white text-[22px] px-2 tracking-wide">
+        <div class="w-full flex-none top-0 z-10 h-12 lg:h-14 flex justify-between items-center bg-primary-900 lg:bg-primary-800 flex-none w-full rounded-tr-xl lg:rounded-none">
+            <div class=" text-white text-[22px] px-2 tracking-wide">
                 <a class="font-bold">Chat<span class="font-light">Net</span></a>
             </div>
-            <div class="flex items-center justify-end p-2 w-full">
-                <button class="mr-1 rounded-full" @click="toggleMenu">
+            <div class="h-full flex items-center justify-end p-2 w-full">
+                    <p class="hidden lg:flex px-4 py-1 bg-yellow-500 rounded-lg text-white text-[14px]">{{$room->name}}</p>
+                <button class="lg:hidden mr-1 rounded-full" @click="toggleMenu">
                     <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
                     </svg>
@@ -13,11 +14,10 @@
             </div>
         </div>
         <div class="left top-0 flex flex-col overflow-y-auto overflow-x-hidden h-full w-full">
-            <div class=" flex-none w-full items-center justify-center h-56 flex flex-col text-white bg-[url('/storage/assets/img/bg-user-greetings.jpg')]">
-                <img class="rounded-full w-20 h-20 shadow-md border-[3px] border-white" src="{{asset('storage/images/'. auth()->user()->avatar)}}"  alt="{{auth()->user()->name}}">
+            <div class="flex-none w-full items-center justify-center h-56 flex flex-col text-white bg-[url('/storage/assets/img/bg-user-greetings.jpg')]">
+                <img class="rounded-full w-20 h-20 shadow-md border-[3px] border-white" src="{{asset("storage/images/$user->avatar")}}"  alt="">
                 <span class="pt-1 text-[13px] font-light">Good Afternooon,</span>
-                <div class="text-[18px]">{{auth()->user()->name}}</div>
-                <p class="text-center py-2 mx-auto text-[11px] lg:text-[12px] font-light">" Start your day off with a smile and positive thought with this morning. "</p>
+                <div class="text-[18px]">{{$user->name}}</div>
             </div>
             {{--                        menulist--}}
             <div class="flex flex-col w-full ">

@@ -8,6 +8,8 @@ use App\Models\Message;
 use App\Models\Room;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -17,7 +19,6 @@ class MainLobby extends Component
 
     public string $input = "";
     public $image;
-    public $audio;
     public array $chatMessages = [];
     public User $user;
     public bool $showLoader = true;
@@ -28,6 +29,7 @@ class MainLobby extends Component
         'here',
         'subscribed',
         'newMessage',
+        'newAudio',
         'removeMessage',
         'hideLoader',
         'load-more-messages' => 'loadMore',
@@ -102,10 +104,27 @@ class MainLobby extends Component
             ]);
             return;
         }
+        $imageName = $this->image->store("main/images", 'public');
+        $imageName = str_replace("main/images/", "", $imageName);
         $message = $this->user->messages()->create([
             'room_id' => $this->room->id,
             'message' => $this->input,
-            'image' => $this->image->store('images', 'public'),
+            'image' => $imageName,
+            'type' => 'public',
+        ]);
+        $this->reset('input');
+        $this->reset('image');
+        $this->broadcastToOthers($message);
+    }
+
+    public function newAudio($audio){
+        $audioName = Str::random(40). '.mp3';
+        Storage::disk('public')->put("main/audios/$audioName", base64_decode(Str::of($audio)->after(',')));
+
+        $message = $this->user->messages()->create([
+            'room_id' => $this->room->id,
+            'message' => $this->input,
+            'audio' => $audioName,
             'type' => 'public',
         ]);
         $this->reset('input');

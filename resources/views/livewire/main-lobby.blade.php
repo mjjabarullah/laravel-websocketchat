@@ -2,6 +2,9 @@
     <div class="z-10 absolute inset-0 w-full h-full rounded-xl lg:rounded-none bg-white invisible">
         <img class="w-full h-full object-fill opacity-20" src="{{asset('storage/assets/img/bg-main-greetings.png')}}" alt="">
     </div>
+    {{-- header --}}
+    <livewire:header :user="$user" :room="$room"/>
+
     <div class="flex flex-col h-full justify-end w-full">
         <div class="h-full w-full">
             <div class="z-10 relative h-full">
@@ -22,18 +25,18 @@
                     </div>
                 </div>
                 {{--messages--}}
-                <div x-cloak x-show="!showLoader" id="chat-messages" class="absolute bottom-0 flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full w-full pt-8 ">
+                <ul x-cloak x-show="!showLoader" id="chat-messages" class="absolute bottom-0 flex flex-col-reverse overflow-y-auto overflow-x-hidden h-full w-full pt-8 ">
                     @foreach ($chatMessages as $message)
                         @if($message['type'] == 'topic')
-                            <x-topic :message="$message"/>
+                            <x-topic :message="$message"></x-topic>
                         @else
-                            <x-message :message="$message" :user="$user"/>
+                            <x-message :message="$message" :user="$user"></x-message>
                         @endif
                     @endforeach
-                </div>
+                </ul>
             </div>
         </div>
         {{--                        input panel--}}
-        <x-message-input/>
+        <x-message-input></x-message-input>
     </div>
 </div>

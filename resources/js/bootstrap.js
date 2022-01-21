@@ -1,6 +1,7 @@
 // noinspection JSUnresolvedVariable,JSUnresolvedFunction
 
-import log from "tailwindcss/lib/util/log";
+import Echo from 'laravel-echo'
+import Alpine from 'alpinejs'
 
 window._ = require('lodash')
 
@@ -19,9 +20,6 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
  * for events that are broadcast by Laravel. Echo and event broadcasting
  * allows your team to easily build robust real-time web applications.
  */
-
-import Echo from 'laravel-echo'
-import Alpine from 'alpinejs'
 // import Peer from 'peerjs';
 
 window.Pusher = require('pusher-js')
@@ -41,12 +39,18 @@ window.Echo = new Echo({
 *  listen to chat room channel
 * */
 
-function joinToChannel(roomId) {
+window.Echo.private(`User.${userId}`)
+    .subscribed(()=>{
+        window.livewire.emit('socket', window.Echo.socketId())
+    })
+
+window.joinToChannel = (roomId) => {
     window.Echo.join(`chat.${roomId}`)
-        .subscribed(()=>{
+        .subscribed(() => {
             window.livewire.emit('subscribed')
         })
         .here(users => {
+            console.log(users);
             window.livewire.emit('here', users)
         })
         .joining(user => {
@@ -65,15 +69,12 @@ function joinToChannel(roomId) {
             window.livewire.emit('removeMessage', data)
             // console.log("deleteMessage" + JSON.stringify(data))
         })
-        .error(error => {
-            sweetAlert(error)
-        })
 }
 
 joinToChannel(window.roomId)
 
 
-function sweetAlert(title){
+function sweetAlert(title) {
     window.Swal.fire({
         title: title,
         target: '#error-target',
@@ -99,7 +100,7 @@ $(window).on('roomChanged', e => {
     window.livewire.emit('roomChanged', window.roomId)
 })
 
-$(window).on('listeners', e=>{
+$(window).on('listeners', e => {
     console.log(e.detail);
 })
 
@@ -119,10 +120,6 @@ $(window).on('listeners', e=>{
 //     })
 //     console.log(id)
 // })
-
-window.Alpine = Alpine
-Alpine.start()
-
 
 /*
 * custom functions
@@ -207,40 +204,108 @@ $(document).ready(function () {
         if (!isScrolling) chatMessages.scrollTop($(chatMessages)[0].scrollHeight)
     })
 
-   /*
-    *  show toast when sending empty message
-    * */
+    /*
+     *  show toast when sending empty message
+     * */
 
     $(window).on('chatError', e => {
-       sweetAlert(e.detail.title)
+        sweetAlert(e.detail.title)
     })
+})
 
-    /*
-    * Record audio and send
-    * */
-    const MicRecorder = require('mic-recorder-to-mp3');
-    const recorder = new MicRecorder({bitRate: 128});
+/*
+* Record audio and send
+* */
+const MicRecorder = require('mic-recorder-to-mp3');
+const recorder = new MicRecorder({bitRate: 64});
+const reader = new FileReader();
+let isRecording = false;
 
-    function startRecording(){
+$(window).on('record', e => {
+    if (!isRecording) {
         recorder.start().then(() => {
-
+            isRecording = true
+            console.log('recording')
+        }).catch(e => {
+            sweetAlert('Cannot get mic permission')
+        });
+    } else {
+        isRecording = false
+        recorder.stop().getMp3().then(([buffer, blob]) => {
+            const file = new File(buffer, 'music.mp3', {type: blob.type, lastModified: Date.now()});
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                window.livewire.emit('newAudio', reader.result);
+            }
+            reader.onerror = e => {
+                sweetAlert('Recorded audio upload failed')
+            }
         }).catch((e) => {
-            console.error(e);
+            sweetAlert('Recorded audio upload failed')
         });
     }
-
-    recorder
-        .stop()
-        .getMp3().then(([buffer, blob]) => {
-        const file = new File(buffer, 'music.mp3', {
-            type: blob.type,
-            lastModified: Date.now()
-        });
-    }).catch((e) => {
-        console.log(e);
-    });
-
 })
+
+/*
+* audio player
+* */
+
+let audio = null
+let audioId = null
+window.playAudio = (id) => {
+    const timeline = document.querySelector(`.timeline_${id}`)
+    const progressBar = document.querySelector(`.progress_${id}`)
+    const play = document.querySelector(`.play_${id}`)
+    const pause = document.querySelector(`.pause_${id}`)
+    const timeOut = setInterval(() => {
+        progressBar.style.width = audio.currentTime / audio.duration * 100 + "%"
+    }, 500)
+
+    if (audio !== null) {
+        clearInterval(timeOut)
+        if(audioId != null && audioId !== id) {
+            audio.pause();
+            audio.currentTime = 0;
+        }else {
+            audio.play()
+        }
+    }else {
+        audio = document.getElementById(`audio_${id}`)
+    }
+    audio.play()
+
+    timeline.addEventListener("click", e => {
+        const timelineWidth = window.getComputedStyle(timeline).width
+        console.log(parseInt(timelineWidth))
+        console.log(audio.duration)
+        console.log(e.offsetX)
+        console.log((e.offsetX / parseInt(timelineWidth)) * audio.duration)
+        audio.currentTime = 5
+        console.log(audio.currentTime)
+    }, false)
+
+
+    audio.onended = () => {
+        clearInterval(timeOut)
+        progressBar.style.width = 0 + "%"
+        play.classList.toggle("hidden")
+        pause.classList.toggle("hidden");
+        audio= null
+    }
+    play.classList.toggle("hidden")
+    pause.classList.toggle("hidden");
+}
+
+window.pauseAudio = (id) => {
+    const play = document.querySelector(`.play_${id}`)
+    const pause = document.querySelector(`.pause_${id}`)
+    if (audio != null) {
+        audio.pause()
+    }
+    pause.classList.toggle("hidden");
+    play.classList.toggle("hidden");
+}
+
 
 
 

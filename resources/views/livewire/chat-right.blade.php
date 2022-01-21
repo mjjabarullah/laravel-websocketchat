@@ -1,6 +1,6 @@
 <div x-data="{ showLoader: @entangle('showLoader') }" id="user-list" class="z-[60] lg:z-0 bg-white hidden lg:block absolute h-screen right-0 inset-y-0 lg:relative w-72 md:w-80 lg:h-full rounded-tl-xl rounded-bl-xl lg:rounded-none drop-shadow-lg lg:drop-shadow-none">
     <div class="h-full w-full flex flex-col rounded-tl-xl lg:rounded-none absolute">
-        <div class="flex-none sticky top-0 z-10 h-12 flex lg:border-b justify-between bg-primary-900 lg:bg-white bg-white border-gray-200 text-white lg:text-primary-800 rounded-tl-xl lg:rounded-none px-2 ">
+        <div class="flex-none h-12 lg:h-14 flex justify-between bg-primary-800 bg-white text-white rounded-tl-xl lg:rounded-none px-2 ">
             <button class="lg:invisible mr-1 rounded-full" @click="toggleUserList">
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>

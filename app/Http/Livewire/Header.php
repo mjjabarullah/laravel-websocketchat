@@ -9,7 +9,6 @@ class Header extends Component
 {
 
     public Room $room;
-    public bool $showMenu = false;
 
     protected $listeners =['roomChanged'];
 
@@ -26,7 +25,4 @@ class Header extends Component
         $this->room = $room;
     }
 
-    public function showMenu(){
-        $this->showMenu = !$this->showMenu;
-    }
 }

@@ -13,6 +13,10 @@ class Chat extends Component
     public User $user;
     public Room $room;
 
+    protected $listeners = [
+        'socket'=> 'socketId'
+    ];
+
     public function mount(User $user, Room $room)
     {
         $this->user = $user;
@@ -22,5 +26,11 @@ class Chat extends Component
     public function render()
     {
         return view('livewire.chat');
+    }
+
+    public function socketId(String $socketId){
+        $this->user->connections()->create([
+            'socket_id' => $socketId
+        ]);
     }
 }
